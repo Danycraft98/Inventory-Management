@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% load widget_tweaks %}
+{% load render_table from django_tables2 %}
+
+
+{% block title %} Inventory List {% endblock title %}
+
+{% block head %}
+    <div>{{ title }} List</div>
+    <a class="btn btn-outline-primary mt-auto" href="{% url link %}">{{ btn }}</a>
+{% endblock %}
+
+{% block content %}
+    <hr/>
+
+    {% if filter %}
+        <form method="get" class="mb-4">
+            <div class="input-group search">
+                {% render_field filter.form.name class="form-control" placeholder="Search by name" %}
+                <button type="submit" class="btn btn-primary"> Search </button>
+            </div>
+        </form>
+    {% endif %}
+    {% render_table table %}
+
+{% endblock content %}

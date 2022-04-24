@@ -1,0 +1,75 @@
+<nav class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 280px;">
+    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+        <svg class="bi me-2" width="40" height="32">
+            <use xlink:href="#bootstrap"></use>
+        </svg>
+        <span class="fs-4">Sidebar</span>
+    </a>
+    <hr>
+
+    <div class="nav nav-pills flex-column mb-auto">
+        <a href="{% url 'home' %}" class="nav-item nav-link active mb-1">
+            <i class="pe-7s-home"></i> Home
+        </a>
+
+        <div class="nav-item mb-1">
+            <a href="#order-collapse" data-bs-toggle="collapse" class="nav-link">
+                <i class="pe-7s-ticket"></i> Order
+            </a>
+            <ul id="order-collapse" class="collapse list-unstyled">
+                <li><a href="{% url 'purchases-list' %}" class="nav-link">Order List</a></li>
+                <li><a href="{% url 'select-supplier' %}" class="nav-link">New Incoming Stock</a></li>
+            </ul>
+        </div>
+
+        <div class="nav-item mb-1">
+            <a href="#inv-collapse" data-bs-toggle="collapse" class="nav-link">
+                <i class="pe-7s-note2"></i> Inventory
+            </a>
+            <ul id="inv-collapse" class="collapse list-unstyled">
+                <li><a href="{% url 'inventory' %}" class="nav-link">Inventory List</a></li>
+                <li><a href="{% url 'new-stock' %}" class="nav-link">Add New Stock</a></li>
+            </ul>
+        </div>
+
+        <div class="nav-item mb-1">
+            <a href="#sup-collapse" data-bs-toggle="collapse" class="nav-link">
+                <i class="pe-7s-users"></i> Suppliers
+            </a>
+            <ul id="sup-collapse" class="collapse list-unstyled">
+                <li><a href="{% url 'suppliers-list' %}" class="nav-link">Suppliers List</a></li>
+                <li><a href="{% url 'new-supplier' %}" class="nav-link">New New Supplier</a></li>
+            </ul>
+        </div>
+
+        <a href="{% url 'about' %}" class="nav-item nav-link mb-1">
+            <i class="pe-7s-about"></i> About Us
+        </a>
+
+        <div>
+            <a href="#saleSubmenu" data-bs-toggle="collapse" class="dropdown-toggle sidebar-text right-arrow sidebar-button">Sales</a>
+            <ul class="collapse list-unstyled" id="saleSubmenu">
+                <li> <a class="sidebar-text sidebar-subitem sidebar-button" href="{% url 'sales-list' %}">Sales Orders</a> </li>
+                <li> <a class="sidebar-text sidebar-subitem sidebar-button" href="{% url 'new-sale' %}">New Outgoing Stock</a> </li>
+            </ul>
+        </div>
+    </div>
+
+    <hr>
+    <div class="dropdown">
+        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+            <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
+            <strong>{{ request.user.username }}</strong>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1" style="">
+            <li><a class="dropdown-item" href="#">New project...</a></li>
+            <li><a class="dropdown-item" href="#">Settings</a></li>
+            <li><a class="dropdown-item" href="#">Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            {% if request.user.is_superuser %}
+                <li> <a class="dropdown-item" href="{% url 'admin:index' %}">Admin Page</a> </li>
+            {% endif %}
+            <li><a class="dropdown-item" href="{% url 'logout' %}">Sign out</a></li>
+        </ul>
+      </div>
+    </nav>
