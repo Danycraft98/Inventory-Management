@@ -10,29 +10,23 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
+from datetime import timedelta
 import os
 from pathlib import Path
+import dj_database_url
+import dotenv as env
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+# Environment Variables
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'qyu(9l9v%^+r(vt#ecf+36#lis516#3bo5@bo-rd*d%a=!%8#!'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
+env.load_dotenv(os.path.join(BASE_DIR, '.env'))
+DEBUG = True # False #bool(os.getenv('DEBUG', 'False'))
+ALLOWED_HOSTS = ['*']
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    'django.contrib.admindocs',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -42,8 +36,8 @@ INSTALLED_APPS = [
     'widget_tweaks',                            # uses 'django-widget-tweaks' app
     'crispy_forms',                             # uses 'django-crispy-forms' app
     'login_required',                           # uses 'django-login-required-middleware' app
-    'django_tables2',
 
+    'core.apps.AdminConfig',
     'inventory.apps.InventoryConfig',
     'transactions.apps.TransactionsConfig',
 
@@ -57,16 +51,20 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.contrib.admindocs.middleware.XViewMiddleware',
 
     'login_required.middleware.LoginRequiredMiddleware',    # middleware used for global login
 ]
 
 ROOT_URLCONF = 'core.urls'
 
+
+# Templates
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ["templates"],  # included 'templates' directory for django to access the html templates
+        'DIRS': [BASE_DIR / 'templates', 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -74,24 +72,30 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django_auto_logout.context_processors.auto_logout_client',
             ],
+            'libraries':{
+                'url': 'core.templatetags.url',
+                'format': 'core.templatetags.format',
+            }
         },
     },
 ]
-
+#FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
+DATABASES = {'default': dj_database_url.config()}
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+SILENCED_SYSTEM_CHECKS = ['fields.E180']
+AUTO_LOGOUT = {
+    'IDLE_TIME': timedelta(minutes=15),
+    'REDIRECT_TO_LOGIN_IMMEDIATELY': True,
+    #'MESSAGE': 'Time to Logout'
+}
 
 
 # Password validation
@@ -139,7 +143,7 @@ else:
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'                     # bootstrap template crispy-form uses
 
-LOGIN_REDIRECT_URL = 'home'                             # sets the login redirect to the 'home' page after login
+LOGIN_REDIRECT_URL = 'admin:index'                             # sets the login redirect to the 'home' page after login
 
 LOGIN_URL = 'login'                                     # sets the 'login' page as default when user tries to illegally access profile or other hidden pages
 

@@ -1,0 +1,38 @@
+{% load i18n url %}
+
+{% if request|is_url:docsurl %}
+    {% if by_lib %}
+    {% regroup url_list|dictsort:"library" by library as grp_libraries %}
+    {% elif by_ns %}
+    {% regroup url_list|dictsort:'namespace' by namespace as grp_libraries %}
+    {% else %}
+    {% regroup url_list by app_config as grp_libraries %}
+    {% endif%}
+
+    <div class="nav-item my-1">
+        <a class="nav-link dropdown-toggle">
+            <i class="pe-7s-{{ icon }}"></i> {% translate name %}
+        </a>
+        <div class="card">
+            {% for library in grp_libraries %}
+                {% with label=library.grouper.verbose_name|default:library.grouper|default:base_name%}
+                <a class="nav-item nav-link" {% if is_model %}href="#{{ library.grouper.label }}_div" data-bs-toggle="collapse"{%else %}href="#{{ library.grouper }}"{% endif %}>{{ label }}</a>
+                {% endwith%}
+                
+                {% if is_model %}
+                <div class="collapse card" id="{{ library.grouper.label }}_div">
+                    {% for model in library.list %}
+                    <div>
+                        <a class="nav-item nav-link" href="{% url 'django-admindocs-models-detail' app_label=model.app_label model_name=model.model_name %}">{{ model.object_name }}</a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+{% else %}
+    <a href="{{ docsurl }}" class="nav-item nav-link mb-1">
+        <i class="pe-7s-{{ icon }}"></i> {% translate name %}
+    </a>
+{% endif %}

@@ -1,5 +1,10 @@
+from uuid import uuid4
+
+from django.conf import settings
 from django.db import models
-from inventory.models import Stock
+from django.core.validators import MinValueValidator
+
+from inventory.models import Item, MadeReagent
 
 #contains suppliers
 class Supplier(models.Model):
@@ -17,112 +22,86 @@ class Supplier(models.Model):
 
 #contains the purchase bills made
 class PurchaseBill(models.Model):
-    billno = models.AutoField("Bill No.", primary_key=True)
-    time = models.DateTimeField("Order Date", auto_now=True)
-    supplier = models.ForeignKey(Supplier, on_delete = models.CASCADE, related_name='purchasesupplier')
+    billno = models.UUIDField("Bill No.", primary_key=True, default=uuid4())
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='purchasesupplier')
+
+    request_date = models.DateTimeField("Request Date", auto_now=True)
+    request_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='requests', default=1)
+    
+    order_date = models.DateTimeField("Order Date", blank=True, null=True)
+    ordered_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders', blank=True, null=True)
+
+    comment = models.TextField('Comments', blank=True)
+    invoice_image = models.FileField('PO Request', blank=True, null=True)
 
     def __str__(self):
         return "Bill no: " + str(self.billno)
 
-    def get_items_list(self):
-        return PurchaseItem.objects.filter(billno=self)
-
     @property
     def item_count(self):
-        return self.get_items_list().count()
+        return self.items.count()
+
+    @property
+    def is_ordered(self):
+        return self.order_date is not None
+
+    @property
+    def status(self):
+        if not self.is_ordered:
+            msg = 'Requested Only'
+        elif all('Not' in item.status for item in self.items.all()):
+            msg = 'Order Placed'
+        elif all('All' in item.status for item in self.items.all()):
+            msg = 'All Items Received'
+        else:
+            msg = 'Partially Received'
+        return msg
+
 
     def get_total_price(self):
-        purchaseitems = PurchaseItem.objects.filter(billno=self)
         total = 0
-        for item in purchaseitems:
+        for item in self.items.all():
             total += item.totalprice
         return total
-
-    @property
-    def item_count(self):
-        return self.get_items_list().count()
+    
 
 #contains the purchase stocks made
 class PurchaseItem(models.Model):
-    billno = models.ForeignKey(PurchaseBill, on_delete = models.CASCADE, related_name='purchasebillno')
-    stock = models.ForeignKey(Stock, on_delete = models.CASCADE, related_name='purchaseitem')
+    billno = models.ForeignKey(PurchaseBill, on_delete=models.CASCADE, related_name='items')
+    stock = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='purchaseitem')
     quantity = models.IntegerField(default=1)
-    perprice = models.IntegerField(default=1)
-    totalprice = models.IntegerField(default=1)
+    perprice = models.DecimalField("Unit Cost", validators=[MinValueValidator(0.00)], default=0.00, max_digits=8, decimal_places=2)
+
+    received = models.IntegerField("Received Quantity", default=0)
+    received_date = models.DateTimeField("Received Date", blank=True, null=True)
+
+    @property
+    def totalprice(self):
+        return self.quantity * self.perprice
 
     def __str__(self):
-	    return "Bill no: " + str(self.billno.billno) + ", Item = " + self.stock.name
+        return "Bill no: " + str(self.billno.billno) + ", Item = " + self.stock.name
 
-#contains the other details in the purchases bill
-class PurchaseBillDetails(models.Model):
-    billno = models.ForeignKey(PurchaseBill, on_delete = models.CASCADE, related_name='purchasedetailsbillno')
-    
-    eway = models.CharField(max_length=50, blank=True, null=True)    
-    veh = models.CharField(max_length=50, blank=True, null=True)
-    destination = models.CharField(max_length=50, blank=True, null=True)
-    po = models.CharField(max_length=50, blank=True, null=True)
-    
-    cgst = models.CharField(max_length=50, blank=True, null=True)
-    sgst = models.CharField(max_length=50, blank=True, null=True)
-    igst = models.CharField(max_length=50, blank=True, null=True)
-    cess = models.CharField(max_length=50, blank=True, null=True)
-    tcs = models.CharField(max_length=50, blank=True, null=True)
-    total = models.CharField(max_length=50, blank=True, null=True)
-
-    def __str__(self):
-	    return "Bill no: " + str(self.billno.billno)
+    @property
+    def status(self):
+        if not self.received:
+            msg = 'Not Received'
+        elif self.received < self.quantity:
+            msg = 'Partially Received'
+        else:
+            msg = 'All Received'
+        return msg
 
 
-#contains the sale bills made
-class SaleBill(models.Model):
-    billno = models.AutoField(primary_key=True)
-    time = models.DateTimeField(auto_now=True)
-
-    name = models.CharField(max_length=150)
-    phone = models.CharField(max_length=12)
-    address = models.CharField(max_length=200)
-    email = models.EmailField(max_length=254)
-    gstin = models.CharField(max_length=15)
+#contains components
+class Component(models.Model):
+    billno = models.ForeignKey(MadeReagent, on_delete=models.CASCADE, related_name='components', null=True)
+    item = models.ForeignKey(PurchaseItem, on_delete=models.CASCADE, related_name='components', null=True)
+    comment = models.TextField('Comments', blank=True)
 
     def __str__(self):
-	    return "Bill no: " + str(self.billno)
+        return "Bill no: " + str(self.billno.billno) + ", Item = " + self.stock.name
 
-    def get_items_list(self):
-        return SaleItem.objects.filter(billno=self)
-        
-    def get_total_price(self):
-        saleitems = SaleItem.objects.filter(billno=self)
-        total = 0
-        for item in saleitems:
-            total += item.totalprice
-        return total
-
-#contains the sale stocks made
-class SaleItem(models.Model):
-    billno = models.ForeignKey(SaleBill, on_delete = models.CASCADE, related_name='salebillno')
-    stock = models.ForeignKey(Stock, on_delete = models.CASCADE, related_name='saleitem')
-    quantity = models.IntegerField(default=1)
-    perprice = models.IntegerField(default=1)
-    totalprice = models.IntegerField(default=1)
-
-    def __str__(self):
-	    return "Bill no: " + str(self.billno.billno) + ", Item = " + self.stock.name
-
-#contains the other details in the sales bill
-class SaleBillDetails(models.Model):
-    billno = models.ForeignKey(SaleBill, on_delete = models.CASCADE, related_name='saledetailsbillno')
-    
-    eway = models.CharField(max_length=50, blank=True, null=True)    
-    veh = models.CharField(max_length=50, blank=True, null=True)
-    destination = models.CharField(max_length=50, blank=True, null=True)
-    po = models.CharField(max_length=50, blank=True, null=True)
-    
-    cgst = models.CharField(max_length=50, blank=True, null=True)
-    sgst = models.CharField(max_length=50, blank=True, null=True)
-    igst = models.CharField(max_length=50, blank=True, null=True)
-    cess = models.CharField(max_length=50, blank=True, null=True)
-    tcs = models.CharField(max_length=50, blank=True, null=True)
-    total = models.CharField(max_length=50, blank=True, null=True)
-
-    def __str__(self):
-	    return "Bill no: " + str(self.billno.billno)
+    @property
+    def stock(self):
+        return self.item.stock

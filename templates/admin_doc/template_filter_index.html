@@ -1,0 +1,2 @@
+{% regroup filters|dictsort:"library" by library as grp_libraries %}
+{% include "admin_doc/base_index.html" with doc_title="Template Filters" name="Filters" grp_libraries=grp_libraries base_name="Built-in filters" %}

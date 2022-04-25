@@ -1,0 +1,3 @@
+{% load i18n %}
+{% regroup models by app_config as grp_libraries %}
+{% include "admin_doc/base_index.html" with doc_title='Models' name='Models' url_list=models %}

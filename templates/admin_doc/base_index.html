@@ -1,0 +1,78 @@
+{% extends "admin/base.html" %}
+{% load i18n format %}
+
+{% block coltype %}colSM{% endblock %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'django-admindocs-docroot' %}">{% translate 'Documentation' %}</a>
+&rsaquo; {% translate name %}
+</div>
+{% endblock %}
+{% block title %}{% translate doc_title %}{% endblock %}
+
+{% block content %}
+<h1>{% translate '{} Documentation'|format:doc_title %}</h1>
+
+<div id="content-main">
+{% for library in grp_libraries %}
+<div class="module" id="{{ library.grouper }}">
+    {% if 'Models' in name %}
+    <div class="module">
+        <table class="table xfull">
+            <tr>
+                <th class="text-white" id="app-{{ library.grouper.label }}" style="background: var(--primary)">{{ library.grouper.verbose_name }} ({{ library.grouper.name }})</th>
+            </tr>
+            
+            {% for model in library.list %}
+            <tr>
+                <th><a href="{% url 'django-admindocs-models-detail' app_label=model.app_label model_name=model.model_name %}">{{ model.object_name }}</a></th>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% else %}
+    <h2>{% firstof library.grouper base_name %}</h2>
+    {% if library.grouper %}<p class="small quiet">{% blocktranslate with code="{"|add:"% load "|add:library.grouper|add:" %"|add:"}" %}To use these filters, put <code>{{ code }}</code> in your template before using the filter.{% endblocktranslate %}</p><hr>{% endif %}
+    {% for grp in library.list|dictsort:"name" %}
+    
+    {% if 'Views' in name %}
+        <h3><a href="{% url 'django-admindocs-views-detail' view=grp.full_name %}">{{ grp.url }}</a></h3>
+        <p class="small quiet">{% blocktranslate with grp.full_name as full_name and grp.url_name as url_name %}
+            View function: <code>{{ full_name }}</code>. Name: <code>{{ url_name }}</code>.
+        {% endblocktranslate %}</p>
+        <p>{{ view.title }}</p>
+    {% else %}
+        <h3 id="{{ library.grouper|default:"built_in" }}-{{ grp.name }}">{{ grp.name }}</h3>
+        {{ grp.title }}
+        {{ grp.body }}
+    {% endif %}
+    
+    {% if not forloop.last %}<hr>{% endif %}
+    {% endfor %}
+    {% endif %}
+</div>
+{% endfor %}
+</div>
+
+{% endblock %}
+
+{% block sidebar %}
+
+<div id="content-related">
+
+{% regroup url_list|dictsort:"library" by library as grp_libraries %}
+{% for library in grp_libraries %}
+<div class="module">
+    <h2>{% firstof library.grouper _("Built-in filters") %}</h2>
+    <ul>
+    {% for filter in library.list|dictsort:"name" %}
+        <li><a href="#{{ library.grouper|default:"built_in" }}-{{ filter.name }}">{{ filter.name }}</a></li>
+    {% endfor %}
+    </ul>
+</div>
+{% endfor %}
+
+</div>
+
+{% endblock %}

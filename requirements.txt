@@ -3,11 +3,14 @@ asgiref
 astroid
 colorama
 distlib
+
 Django
 django-crispy-forms
 django-filter
 django-login-required-middleware
 django-widget-tweaks
+
+docutils
 filelock
 isort
 lazy-object-proxy
@@ -16,5 +19,4 @@ pylint
 pytz
 six
 sqlparse
-virtualenv
 wrapt
